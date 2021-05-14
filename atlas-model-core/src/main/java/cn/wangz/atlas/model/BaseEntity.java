@@ -1,4 +1,4 @@
-package cn.wangz.atlas.model.generator.model;
+package cn.wangz.atlas.model;
 
 import java.util.Date;
 import java.util.List;

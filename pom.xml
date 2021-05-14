@@ -6,7 +6,13 @@
 
     <groupId>cn.wangz.atlas.model.generator</groupId>
     <artifactId>atlas-model-generate</artifactId>
+    <packaging>pom</packaging>
     <version>1.0-SNAPSHOT</version>
+    <modules>
+        <module>atlas-model-generator</module>
+        <module>atlas-model-core</module>
+        <module>atlas-models</module>
+    </modules>
 
 
     <properties>
@@ -15,19 +21,35 @@
     </properties>
 
     <dependencies>
-
         <dependency>
             <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-intg</artifactId>
             <version>${atlas.version}</version>
         </dependency>
-
-        <dependency>
-            <groupId>com.github.javaparser</groupId>
-            <artifactId>javaparser-core</artifactId>
-            <version>${javaparser.version}</version>
-        </dependency>
     </dependencies>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.apache.atlas</groupId>
+                <artifactId>atlas-intg</artifactId>
+                <version>${atlas.version}</version>
+                <scope>provided</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>com.github.javaparser</groupId>
+                <artifactId>javaparser-core</artifactId>
+                <version>${javaparser.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>cn.wangz.atlas.model.generator</groupId>
+                <artifactId>atlas-model-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <build>
         <plugins>
