@@ -161,7 +161,13 @@ public class AtlasTypesDefGenerator {
         EnumDeclaration enumDeclaration = compilationUnit.addEnum(clazzName).setPublic(true);
         atlasEnumDef.getElementDefs().stream()
                 .sorted(Comparator.comparingInt(v -> v.getOrdinal()))
-                .map(v -> new EnumConstantDeclaration(StringHelper.fixIdentifier(v.getValue())))
+                .map(v -> {
+                    String value = "\"" + v.getValue() + "\"";
+                    String name = StringHelper.fixIdentifier(v.getValue());
+                    EnumConstantDeclaration enumConstantDeclaration = new EnumConstantDeclaration(name);
+                    enumConstantDeclaration.addArgument(value);
+                    return enumConstantDeclaration;
+                })
                 .forEach(e -> enumDeclaration.addEntry(e));
 
         return compilationUnit;
