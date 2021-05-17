@@ -31,6 +31,11 @@ public class StringHelper {
                 .replaceAll("\\s", "_");
     }
 
+    public static String fixAttributeName(String identifier) {
+        return identifier.replace("-", "_")
+                .replaceAll("\\s", "_");
+    }
+
     static final String KEYWORDS[] = { "abstract", "assert", "boolean",
             "break", "byte", "case", "catch", "char", "class", "const",
             "continue", "default", "do", "double", "else", "extends", "false",

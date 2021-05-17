@@ -17,11 +17,14 @@ import cn.wangz.atlas.model.annotation.AtlasRelationshipAttribute;
 import cn.wangz.atlas.model.BaseEntity;
 import cn.wangz.atlas.model.generator.utils.StringHelper;
 import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.Modifier;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+import com.github.javaparser.ast.body.ConstructorDeclaration;
 import com.github.javaparser.ast.body.EnumConstantDeclaration;
 import com.github.javaparser.ast.body.EnumDeclaration;
 import com.github.javaparser.ast.body.FieldDeclaration;
 import com.github.javaparser.ast.expr.NormalAnnotationExpr;
+import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.utils.SourceRoot;
 
 public class AtlasTypesDefGenerator {
@@ -68,6 +71,9 @@ public class AtlasTypesDefGenerator {
 
         ClassOrInterfaceDeclaration atlasTypeClazz = compilationUnit.addClass(clazzName)
                 .setPublic(true);
+
+        atlasTypeClazz.addConstructor(Modifier.Keyword.PUBLIC)
+                .getBody().addStatement("this.setTypeName(\"" + atlasEntityDef.getName() + "\");");
 
         // add supper type
         if (atlasEntityDef.getSuperTypes() != null && !atlasEntityDef.getSuperTypes().isEmpty()) {
@@ -191,6 +197,10 @@ public class AtlasTypesDefGenerator {
         sourceRoot.add(packageName, clazzName + ".java", compilationUnit);
         compilationUnit.setPackageDeclaration(packageName);
         EnumDeclaration enumDeclaration = compilationUnit.addEnum(clazzName).setPublic(true);
+        enumDeclaration.addField(String.class, "name").createGetter();
+        ConstructorDeclaration constructor = enumDeclaration.addConstructor();
+        constructor.addParameter(String.class, "name");
+        constructor.getBody().addStatement("this.name = name;");
         atlasEnumDef.getElementDefs().stream()
                 .sorted(Comparator.comparingInt(v -> v.getOrdinal()))
                 .map(v -> {
@@ -212,7 +222,7 @@ public class AtlasTypesDefGenerator {
 
     private FieldDeclaration addAttrField(ClassOrInterfaceDeclaration atlasTypeClazz,
             AtlasStructDef.AtlasAttributeDef atlasAttributeDef, boolean isRelationship, String relationshipName) {
-        String attrName = StringHelper.toLowerCamel(atlasAttributeDef.getName());
+        String attrName = atlasAttributeDef.getName();
         String attrTypeName = atlasAttributeDef.getTypeName();
         String attrClassName = AtlasTypeCache.getAtlasTypeClass(attrTypeName);
 
@@ -221,7 +231,7 @@ public class AtlasTypesDefGenerator {
 
     private FieldDeclaration addAttrField(ClassOrInterfaceDeclaration atlasTypeClazz,
             String attrName, String attrClassName, boolean isRelationship, String relationshipName) {
-        String newAttrName = attrName;
+        String newAttrName = StringHelper.toLowerCamel(attrName);
         if (StringHelper.isJavaKeyword(attrName)) {
             newAttrName = attrName + "_attr";
         }
