@@ -22,5 +22,33 @@
             <artifactId>atlas-model-core</artifactId>
         </dependency>
     </dependencies>
-
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.0.0</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <executable>java</executable>
+                    <classpathScope>test</classpathScope>
+                    <includeProjectDependencies>true</includeProjectDependencies>
+                    <arguments>
+                        <argument>-classpath</argument>
+                        <!-- automatically creates the classpath using all project dependencies,
+                             also adding the project build directory -->
+                        <classpath/>
+                        <argument>cn.wangz.atlas.model.generator.GeneratorMain</argument>
+                    </arguments>
+                    <workingDirectory>${project.parent.basedir}</workingDirectory>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>
