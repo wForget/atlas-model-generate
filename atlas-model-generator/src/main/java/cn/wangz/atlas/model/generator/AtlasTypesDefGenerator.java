@@ -1,6 +1,5 @@
 package cn.wangz.atlas.model.generator;
 
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -107,40 +106,44 @@ public class AtlasTypesDefGenerator {
         }
 
         List<FieldDeclaration> attrFieldList = new ArrayList<>();
-        // attribute
-        if (atlasEntityDef.getAttributeDefs() != null) {
-            attrFieldList.addAll(atlasEntityDef.getAttributeDefs().stream()
-                    .map(atlasAttributeDef -> addAttrField(atlasTypeClazz, atlasAttributeDef, false))
-                    .collect(Collectors.toList()));
-        }
-
-        // relation attribute
-        if (atlasEntityDef.getRelationshipAttributeDefs() != null) {
-            attrFieldList.addAll(atlasEntityDef.getRelationshipAttributeDefs().stream()
-                    .map(atlasAttributeDef -> addAttrField(atlasTypeClazz, atlasAttributeDef, true))
-                    .collect(Collectors.toList()));
-        }
 
         // relationshipDef attribute
         attrFieldList.addAll(AtlasTypeCache.getAtlasRelationshipDef(atlasEntityDef.getName().toLowerCase())
                 .stream()
                 .map(relationshipEndDefPair -> {
-                    AtlasRelationshipEndDef left = relationshipEndDefPair.getLeft();
-                    AtlasRelationshipEndDef right = relationshipEndDefPair.getRight();
+                    String relationshipName = relationshipEndDefPair.getLeft();
+                    AtlasRelationshipEndDef left = relationshipEndDefPair.getRight().getLeft();
+                    AtlasRelationshipEndDef right = relationshipEndDefPair.getRight().getRight();
                     String name = left.getName();
                     String type = AtlasTypeCache.getAtlasTypeClass(right.getType());
                     switch (left.getCardinality()) {
-                        case SINGLE:
-                            break;
-                        case LIST:
-                            type = "java.util.List<" + type + ">";
-                            break;
-                        case SET:
-                            type = "java.util.Set<" + type + ">";
-                            break;
+                    case SINGLE:
+                        break;
+                    case LIST:
+                        type = "java.util.List<" + type + ">";
+                        break;
+                    case SET:
+                        type = "java.util.Set<" + type + ">";
+                        break;
                     }
-                    return addAttrField(atlasTypeClazz, name, type, true);
+                    return addAttrField(atlasTypeClazz, name, type, true, relationshipName);
                 }).collect(Collectors.toList()));
+
+        // relation attribute
+        if (atlasEntityDef.getRelationshipAttributeDefs() != null) {
+            attrFieldList.addAll(atlasEntityDef.getRelationshipAttributeDefs().stream()
+                    .map(atlasAttributeDef ->
+                        addAttrField(atlasTypeClazz, atlasAttributeDef, true, atlasAttributeDef.getRelationshipTypeName())
+                    )
+                    .collect(Collectors.toList()));
+        }
+
+        // attribute
+        if (atlasEntityDef.getAttributeDefs() != null) {
+            attrFieldList.addAll(atlasEntityDef.getAttributeDefs().stream()
+                    .map(atlasAttributeDef -> addAttrField(atlasTypeClazz, atlasAttributeDef))
+                    .collect(Collectors.toList()));
+        }
 
         // create get and set method
         attrFieldList.forEach(fieldDeclaration -> {
@@ -173,7 +176,7 @@ public class AtlasTypesDefGenerator {
         // attribute
         if (atlasStructDef.getAttributeDefs() != null) {
             atlasStructDef.getAttributeDefs().forEach(atlasAttributeDef -> {
-                addAttrField(atlasTypeClazz, atlasAttributeDef, false);
+                addAttrField(atlasTypeClazz, atlasAttributeDef);
             });
         }
 
@@ -203,17 +206,21 @@ public class AtlasTypesDefGenerator {
     }
 
     private FieldDeclaration addAttrField(ClassOrInterfaceDeclaration atlasTypeClazz,
-            AtlasStructDef.AtlasAttributeDef atlasAttributeDef,
-            boolean isRelationship) {
+            AtlasStructDef.AtlasAttributeDef atlasAttributeDef) {
+        return addAttrField(atlasTypeClazz, atlasAttributeDef, false, null);
+    }
+
+    private FieldDeclaration addAttrField(ClassOrInterfaceDeclaration atlasTypeClazz,
+            AtlasStructDef.AtlasAttributeDef atlasAttributeDef, boolean isRelationship, String relationshipName) {
         String attrName = StringHelper.toLowerCamel(atlasAttributeDef.getName());
         String attrTypeName = atlasAttributeDef.getTypeName();
         String attrClassName = AtlasTypeCache.getAtlasTypeClass(attrTypeName);
 
-        return addAttrField(atlasTypeClazz, attrName, attrClassName, isRelationship);
+        return addAttrField(atlasTypeClazz, attrName, attrClassName, isRelationship, relationshipName);
     }
 
     private FieldDeclaration addAttrField(ClassOrInterfaceDeclaration atlasTypeClazz,
-            String attrName, String attrClassName, boolean isRelationship) {
+            String attrName, String attrClassName, boolean isRelationship, String relationshipName) {
         String newAttrName = attrName;
         if (StringHelper.isJavaKeyword(attrName)) {
             newAttrName = attrName + "_attr";
@@ -228,6 +235,9 @@ public class AtlasTypesDefGenerator {
         NormalAnnotationExpr normalAnnotationExpr;
         if (isRelationship) {
             normalAnnotationExpr = fieldDeclaration.addAndGetAnnotation(AtlasRelationshipAttribute.class);
+            if (relationshipName != null) {
+                normalAnnotationExpr.addPair("relationShipName", "\"" + relationshipName + "\"");
+            }
         } else {
             normalAnnotationExpr = fieldDeclaration.addAndGetAnnotation(AtlasAttribute.class);
         }
