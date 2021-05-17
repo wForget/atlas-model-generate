@@ -12,10 +12,12 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+import org.apache.atlas.model.typedef.AtlasRelationshipEndDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.type.AtlasType;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 
 import cn.wangz.atlas.model.generator.utils.StringHelper;
 
@@ -24,6 +26,7 @@ public class AtlasTypeCache {
     private static final String PACKAGE_PREFIX = "cn.wangz.atlas.model.entity.";
     private static final List<AtlasTypesDef> atlasTypes = new ArrayList<>();
     private static final Map<String, String> atlasTypeClassMap = new HashMap<>();
+    private static final Map<String, List<Pair<AtlasRelationshipEndDef, AtlasRelationshipEndDef>>> atlasTypeRelationshipDefMap = new HashMap<>();
 
     static {
         atlasTypeClassMap.put(AtlasBaseTypeDef.ATLAS_TYPE_BOOLEAN, Boolean.class.getName());
@@ -63,6 +66,10 @@ public class AtlasTypeCache {
 
     public static List<AtlasTypesDef> getAtlasTypes() {
         return atlasTypes;
+    }
+
+    public static List<Pair<AtlasRelationshipEndDef, AtlasRelationshipEndDef>> getAtlasRelationshipDef(String typeName) {
+        return atlasTypeRelationshipDefMap.getOrDefault(typeName, new ArrayList<>());
     }
 
     public static String getClassName(AtlasBaseTypeDef baseTypeDef) {
@@ -106,6 +113,24 @@ public class AtlasTypeCache {
         });
         atlasTypesDef.getEntityDefs().forEach(atlasEntityDef -> {
             atlasTypeClassMap.put(atlasEntityDef.getName().toLowerCase(), getFullClassName(atlasEntityDef));
+        });
+        atlasTypesDef.getRelationshipDefs().forEach(atlasRelationshipDef -> {
+            AtlasRelationshipEndDef endDef1 = atlasRelationshipDef.getEndDef1();
+            AtlasRelationshipEndDef endDef2 = atlasRelationshipDef.getEndDef2();
+            if (endDef1.getIsLegacyAttribute()) {
+                String key = endDef1.getType().toLowerCase();
+                if (atlasTypeRelationshipDefMap.get(key) == null) {
+                    atlasTypeRelationshipDefMap.put(key, new ArrayList<>());
+                }
+                atlasTypeRelationshipDefMap.get(key).add(Pair.of(endDef1, endDef2));
+            }
+            if (endDef2.getIsLegacyAttribute()) {
+                String key = endDef2.getType().toLowerCase();
+                if (atlasTypeRelationshipDefMap.get(key) == null) {
+                    atlasTypeRelationshipDefMap.put(key, new ArrayList<>());
+                }
+                atlasTypeRelationshipDefMap.get(key).add(Pair.of(endDef2, endDef1));
+            }
         });
     }
 
