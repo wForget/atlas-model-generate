@@ -10,20 +10,21 @@ Atlas Model Generator 项目，根据 models 定义的 json 文件，生成 Java
 
 1. 编译 generator
 
-```
-cd $PROJECT_HOME
-
-mvn clean -DskipTests install
-```
+    ```
+    cd $PROJECT_HOME
+    
+    mvn clean -DskipTests install
+    ```
 
 2. 执行 generator 生成代码
 
-```
-mvn exec:exec
-```
+    ```
+    cd $PROJECT_HOME\atlas-model-generator
+    mvn exec:exec
+    ```
 
 3. atlas-models 模块
 
-生成的 Java Bean 代码在 atlas-models/src/main/java 中，可将 atlas-models 模块进行打包然后提供给用户使用。
+    生成的 Java Bean 代码在 atlas-models/src/main/java 中，可将 atlas-models 模块进行打包然后提供给用户使用。
 
  
