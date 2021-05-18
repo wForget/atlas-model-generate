@@ -237,7 +237,7 @@ public class AtlasTypesDefGenerator {
         }
 
         // if field exists, remove it
-        if (atlasTypeClazz.getFieldByName(attrName).isPresent()) {
+        if (atlasTypeClazz.getFieldByName(newAttrName).isPresent()) {
             return null;
         }
 
