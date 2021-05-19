@@ -1,8 +1,5 @@
 package cn.wangz.atlas.model;
 
-import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -11,208 +8,186 @@ import java.util.Set;
 import org.apache.atlas.model.glossary.relations.AtlasTermAssignmentHeader;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.atlas.model.instance.AtlasObjectId;
-import org.apache.atlas.model.instance.AtlasRelatedObjectId;
-import org.apache.atlas.type.AtlasTypeUtil;
-import org.apache.commons.lang3.StringUtils;
 
-import cn.wangz.atlas.model.annotation.AtlasAttribute;
-import cn.wangz.atlas.model.annotation.AtlasRelationshipAttribute;
-import cn.wangz.atlas.model.utils.TypeUtils;
+import cn.wangz.atlas.model.utils.AtlasUtils;
 
 public class BaseEntity {
 
-    private AtlasEntity atlasEntity = null;
-
     public BaseEntity() {
-        this.atlasEntity = new AtlasEntity();
+        this.guid = AtlasUtils.nextInternalId();
     }
 
-    public AtlasEntity.AtlasEntityWithExtInfo toAtlasEntityWithExtInfo() {
-        AtlasEntity.AtlasEntityExtInfo atlasEntityExtInfo = new AtlasEntity.AtlasEntityExtInfo();
-        toAtlasEntity(atlasEntityExtInfo);
+    private String guid = null;
+    private String homeId = null;
+    private Boolean isProxy = Boolean.FALSE;
+    private Boolean isIncomplete = Boolean.FALSE;
+    private Integer provenanceType = 0;
+    private AtlasEntity.Status status = AtlasEntity.Status.ACTIVE;
+    private String createdBy = null;
+    private String updatedBy = null;
+    private Date createTime = null;
+    private Date updateTime = null;
+    private Long version = 0L;
+    private String typeName;
 
-        return new AtlasEntity.AtlasEntityWithExtInfo(this.atlasEntity, atlasEntityExtInfo);
+    private List<AtlasClassification> classifications;
+    private List<AtlasTermAssignmentHeader> meanings;
+    private Map<String, String> customAttributes;
+    private Map<String, Map<String, Object>> businessAttributes;
+    private Set<String> labels;
+
+    private Map<String, Object> attributes;
+    private Map<String, Object> relationshipAttributes;
+
+    public String getGuid() {
+        return guid;
     }
-
-    public AtlasEntity toAtlasEntity(AtlasEntity.AtlasEntityExtInfo extInfo) {
-        // fill attribute
-        fillAttributes(extInfo);
-
-        // fill relationship attribute
-        fillRelationshipAttributes(extInfo);
-
-        return atlasEntity;
-    }
-
-    private void fillAttributes(AtlasEntity.AtlasEntityExtInfo extInfo) {
-        List<Field> fields = TypeUtils.getAllFields(this.getClass());
-        for (Field field: fields) {
-            AtlasAttribute atlasAttributeAnno = field.getAnnotation(AtlasAttribute.class);
-            if (atlasAttributeAnno != null) {
-                String name = atlasAttributeAnno.name();
-                if (StringUtils.isBlank(name)) {
-                    name = field.getName();
-                }
-                Object value = null;
-                try {
-                    value = TypeUtils.getFiledValue(this, field);
-                } catch (IllegalAccessException e) {
-                    e.printStackTrace();
-                    // do noting
-                }
-                if (value == null) {
-                    continue;
-                }
-                if (value instanceof List || value instanceof Set) {
-                    List<Object> list = new ArrayList<>();
-                    ((Collection<Object>) value).forEach(item -> {
-                        if (item instanceof BaseEntity) {
-                            AtlasEntity entity = ((BaseEntity) item).toAtlasEntity(extInfo);
-                            AtlasObjectId objectId = getAtlasObjectId(entity);
-                            list.add(objectId);
-                            extInfo.addReferredEntity(entity);
-                        } else {
-                            list.add(item);
-                        }
-                    });
-                    this.atlasEntity.setAttribute(name, list);
-                } else if (value instanceof BaseEntity) {
-                    AtlasEntity entity = ((BaseEntity) value).toAtlasEntity(extInfo);
-                    AtlasObjectId objectId = getAtlasObjectId(entity);
-                    this.atlasEntity.setAttribute(name, objectId);
-                    extInfo.addReferredEntity(entity);
-                } else {
-                    this.atlasEntity.setAttribute(name, value);
-                }
-            }
-        }
-    }
-
-    private void fillRelationshipAttributes(AtlasEntity.AtlasEntityExtInfo extInfo) {
-        List<Field> fields = TypeUtils.getAllFields(this.getClass());
-        for (Field field: fields) {
-            AtlasRelationshipAttribute atlasRelationshipAttributeAnno = field.getAnnotation(AtlasRelationshipAttribute.class);
-            if (atlasRelationshipAttributeAnno != null) {
-                String name = atlasRelationshipAttributeAnno.name();
-                String relationShipName = field.getAnnotation(AtlasRelationshipAttribute.class).relationShipName();
-                if (StringUtils.isBlank(name)) {
-                    name = field.getName();
-                }
-                Object value = null;
-                try {
-                    value = TypeUtils.getFiledValue(this, field);
-                } catch (IllegalAccessException e) {
-                    // do noting
-                }
-                if (value == null) {
-                    continue;
-                }
-                if (value instanceof List || value instanceof Set) {
-                    List<Object> list = new ArrayList<>();
-                    ((Collection<Object>) value).forEach(item -> {
-                        if (item instanceof BaseEntity) {
-                            AtlasEntity entity = ((BaseEntity) item).toAtlasEntity(extInfo);
-                            AtlasObjectId relatedObjectId = getAtlasRelatedObjectId(entity, relationShipName);
-                            list.add(relatedObjectId);
-                            extInfo.addReferredEntity(entity);
-                        } else {
-                            list.add(item);
-                        }
-                    });
-                    this.atlasEntity.setRelationshipAttribute(name, list);
-                } else if (value instanceof BaseEntity) {
-                    AtlasEntity entity = ((BaseEntity) value).toAtlasEntity(extInfo);
-                    AtlasRelatedObjectId relatedObjectId = getAtlasRelatedObjectId(entity, relationShipName);
-                    this.atlasEntity.setRelationshipAttribute(name, relatedObjectId);
-                    extInfo.addReferredEntity(entity);
-                } else {
-                    this.atlasEntity.setRelationshipAttribute(name, value);
-                }
-            }
-        }
-    }
-
-    private AtlasRelatedObjectId getAtlasRelatedObjectId(AtlasEntity entity, String relationshipName) {
-        return new AtlasRelatedObjectId(getAtlasObjectId(entity), relationshipName);
-    }
-
-    private AtlasObjectId getAtlasObjectId(AtlasEntity entity) {
-        return AtlasTypeUtil.getObjectId(entity);
-    }
-
 
     public void setGuid(String guid) {
-        this.atlasEntity.setGuid(guid);
+        this.guid = guid;
+    }
+
+    public String getHomeId() {
+        return homeId;
     }
 
     public void setHomeId(String homeId) {
-        this.atlasEntity.setHomeId(homeId);
+        this.homeId = homeId;
+    }
+
+    public Boolean getIsProxy() {
+        return isProxy;
     }
 
     public void setIsProxy(Boolean isProxy) {
-        this.atlasEntity.setIsProxy(isProxy);
+        isProxy = isProxy;
     }
 
-    public void setIncomplete(Boolean isIncomplete) {
-        this.atlasEntity.setIsIncomplete(isIncomplete);
+    public Boolean getIsIncomplete() {
+        return isIncomplete;
+    }
+
+    public void setIsIncomplete(Boolean isIncomplete) {
+        isIncomplete = isIncomplete;
+    }
+
+    public Integer getProvenanceType() {
+        return provenanceType;
     }
 
     public void setProvenanceType(Integer provenanceType) {
-        this.atlasEntity.setProvenanceType(provenanceType);
+        this.provenanceType = provenanceType;
+    }
+
+    public AtlasEntity.Status getStatus() {
+        return status;
     }
 
     public void setStatus(AtlasEntity.Status status) {
-        this.atlasEntity.setStatus(status);
+        this.status = status;
+    }
+
+    public String getCreatedBy() {
+        return createdBy;
     }
 
     public void setCreatedBy(String createdBy) {
-        this.atlasEntity.setCreatedBy(createdBy);
+        this.createdBy = createdBy;
+    }
+
+    public String getUpdatedBy() {
+        return updatedBy;
     }
 
     public void setUpdatedBy(String updatedBy) {
-        this.atlasEntity.setUpdatedBy(updatedBy);
+        this.updatedBy = updatedBy;
+    }
+
+    public Date getCreateTime() {
+        return createTime;
     }
 
     public void setCreateTime(Date createTime) {
-        this.atlasEntity.setCreateTime(createTime);
+        this.createTime = createTime;
+    }
+
+    public Date getUpdateTime() {
+        return updateTime;
     }
 
     public void setUpdateTime(Date updateTime) {
-        this.atlasEntity.setUpdateTime(updateTime);
+        this.updateTime = updateTime;
+    }
+
+    public Long getVersion() {
+        return version;
     }
 
     public void setVersion(Long version) {
-        this.atlasEntity.setVersion(version);
+        this.version = version;
+    }
+
+    public String getTypeName() {
+        return typeName;
     }
 
     public void setTypeName(String typeName) {
-        this.atlasEntity.setTypeName(typeName);
+        this.typeName = typeName;
     }
 
-    public void addClassifications(List<AtlasClassification> classifications) {
-        this.atlasEntity.addClassifications(classifications);
+    public Map<String, Object> getAttributes() {
+        return attributes;
     }
 
-    public void setMeanings(AtlasTermAssignmentHeader meaning) {
-        this.atlasEntity.addMeaning(meaning);
+    public void setAttributes(Map<String, Object> attributes) {
+        this.attributes = attributes;
+    }
+
+    public Map<String, Object> getRelationshipAttributes() {
+        return relationshipAttributes;
+    }
+
+    public void setRelationshipAttributes(Map<String, Object> relationshipAttributes) {
+        this.relationshipAttributes = relationshipAttributes;
+    }
+
+    public List<AtlasClassification> getClassifications() {
+        return classifications;
+    }
+
+    public void setClassifications(List<AtlasClassification> classifications) {
+        this.classifications = classifications;
+    }
+
+    public List<AtlasTermAssignmentHeader> getMeanings() {
+        return meanings;
+    }
+
+    public void setMeanings(List<AtlasTermAssignmentHeader> meanings) {
+        this.meanings = meanings;
+    }
+
+    public Map<String, String> getCustomAttributes() {
+        return customAttributes;
     }
 
     public void setCustomAttributes(Map<String, String> customAttributes) {
-        this.atlasEntity.setCustomAttributes(customAttributes);
+        this.customAttributes = customAttributes;
+    }
+
+    public Map<String, Map<String, Object>> getBusinessAttributes() {
+        return businessAttributes;
     }
 
     public void setBusinessAttributes(Map<String, Map<String, Object>> businessAttributes) {
-        this.atlasEntity.setBusinessAttributes(businessAttributes);
+        this.businessAttributes = businessAttributes;
     }
 
-    public void setBusinessAttribute(String nsName, String nsAttrName, Object nsValue) {
-        this.atlasEntity.setBusinessAttribute(nsName, nsAttrName, nsValue);
+    public Set<String> getLabels() {
+        return labels;
     }
 
     public void setLabels(Set<String> labels) {
-        this.atlasEntity.setLabels(labels);
+        this.labels = labels;
     }
-
-
 }

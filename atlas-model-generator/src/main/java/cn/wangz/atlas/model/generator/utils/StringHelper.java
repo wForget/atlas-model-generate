@@ -1,6 +1,7 @@
 package cn.wangz.atlas.model.generator.utils;
 
 import java.util.Arrays;
+import java.util.HashSet;
 
 import com.google.common.base.CaseFormat;
 
@@ -36,7 +37,7 @@ public class StringHelper {
                 .replaceAll("\\s", "_");
     }
 
-    static final String KEYWORDS[] = { "abstract", "assert", "boolean",
+    static final HashSet<String> KEYWORDS = new HashSet<>(Arrays.asList("abstract", "assert", "boolean",
             "break", "byte", "case", "catch", "char", "class", "const",
             "continue", "default", "do", "double", "else", "extends", "false",
             "final", "finally", "float", "for", "goto", "if", "implements",
@@ -44,10 +45,15 @@ public class StringHelper {
             "new", "null", "package", "private", "protected", "public",
             "return", "short", "static", "strictfp", "super", "switch",
             "synchronized", "this", "throw", "throws", "transient", "true",
-            "try", "void", "volatile", "while" };
+            "try", "void", "volatile", "while",
+            // base entity attributes
+            "guid", "homeId", "isProxy", "isIncomplete", "provenanceType", "status",
+            "createdBy", "updatedBy", "createTime", "updateTime", "version", "typeName",
+            "classifications", "meanings", "customAttributes", "businessAttributes", "labels",
+            "attributes", "relationshipAttributes"));
 
-    public static boolean isJavaKeyword(String keyword) {
-        return (Arrays.binarySearch(KEYWORDS, keyword) >= 0);
+    public static boolean isKeyword(String keyword) {
+        return KEYWORDS.contains(keyword);
     }
 
 

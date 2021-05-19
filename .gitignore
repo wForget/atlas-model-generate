@@ -3,3 +3,4 @@
 *.iml
 logs/
 target/
+/atlas-models/src/main/java/

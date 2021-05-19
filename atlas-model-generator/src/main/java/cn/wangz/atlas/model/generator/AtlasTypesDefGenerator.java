@@ -12,10 +12,6 @@ import org.apache.atlas.model.typedef.AtlasRelationshipEndDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 
-import cn.wangz.atlas.model.annotation.AtlasAttribute;
-import cn.wangz.atlas.model.annotation.AtlasRelationshipAttribute;
-import cn.wangz.atlas.model.BaseEntity;
-import cn.wangz.atlas.model.generator.utils.StringHelper;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.Modifier;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
@@ -24,8 +20,12 @@ import com.github.javaparser.ast.body.EnumConstantDeclaration;
 import com.github.javaparser.ast.body.EnumDeclaration;
 import com.github.javaparser.ast.body.FieldDeclaration;
 import com.github.javaparser.ast.expr.NormalAnnotationExpr;
-import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.utils.SourceRoot;
+
+import cn.wangz.atlas.model.BaseEntity;
+import cn.wangz.atlas.model.annotation.AtlasAttribute;
+import cn.wangz.atlas.model.annotation.AtlasRelationshipAttribute;
+import cn.wangz.atlas.model.generator.utils.StringHelper;
 
 public class AtlasTypesDefGenerator {
 
@@ -94,7 +94,7 @@ public class AtlasTypesDefGenerator {
                             supperCu.getClassByName(typeClass.substring(index + 1));
                     supperCd.get().getFields().forEach(fieldDeclaration -> {
                         if (fieldDeclaration.isAnnotationPresent(AtlasAttribute.class)
-                                ||fieldDeclaration.isAnnotationPresent(AtlasRelationshipAttribute.class) ) {
+                                || fieldDeclaration.isAnnotationPresent(AtlasRelationshipAttribute.class) ) {
                             atlasTypeClazz.addPrivateField(fieldDeclaration.getElementType(),
                                     fieldDeclaration.getVariable(0).getName().getIdentifier())
                                     .setAnnotations(fieldDeclaration.getAnnotations());
@@ -114,7 +114,8 @@ public class AtlasTypesDefGenerator {
         List<FieldDeclaration> attrFieldList = new ArrayList<>();
 
         // relationshipDef attribute
-        attrFieldList.addAll(AtlasTypeCache.getAtlasRelationshipDef(atlasEntityDef.getName().toLowerCase())
+        attrFieldList.addAll(
+                AtlasTypeCache.getAtlasRelationshipDef(atlasEntityDef.getName().toLowerCase())
                 .stream()
                 .map(relationshipEndDefPair -> {
                     String relationshipName = relationshipEndDefPair.getLeft();
@@ -232,7 +233,7 @@ public class AtlasTypesDefGenerator {
     private FieldDeclaration addAttrField(ClassOrInterfaceDeclaration atlasTypeClazz,
             String attrName, String attrClassName, boolean isRelationship, String relationshipName) {
         String newAttrName = StringHelper.toLowerCamel(attrName);
-        if (StringHelper.isJavaKeyword(attrName)) {
+        if (StringHelper.isKeyword(attrName)) {
             newAttrName = attrName + "_attr";
         }
 
