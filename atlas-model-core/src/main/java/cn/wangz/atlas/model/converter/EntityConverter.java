@@ -3,6 +3,7 @@ package cn.wangz.atlas.model.converter;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -66,6 +67,10 @@ public class EntityConverter implements Converter<AtlasEntity.AtlasEntityWithExt
             Object value = null;
             try {
                 value = TypeUtils.getFiledValue(this.baseEntity, field);
+                // date type to long
+                if (value != null && value instanceof Date) {
+                    value = ((Date) value).getTime();
+                }
             } catch (IllegalAccessException e) {
                 e.printStackTrace();
                 // do noting
